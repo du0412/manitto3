@@ -147,3 +147,12 @@ async function runMatching() {
 
     alert("랜덤 매칭 완료!");
 }
+/* -------------------------
+   6-1. 메시지 보내기 화면 열기
+-------------------------- */
+function showSend() {
+    document.getElementById("send-section").style.display = "block";
+    document.getElementById("messages-section").style.display = "none";
+    document.getElementById("match-section").style.display = "none";
+}
+
