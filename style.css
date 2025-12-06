@@ -112,6 +112,30 @@ button:active {
     line-height: 1.5;
     white-space: pre-line;
 }
+/* 고급스러운 카드 스타일 */
+.box {
+    margin-top: 18px;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* 관리자 메시지 스타일 */
+.admin-msg-item {
+    padding: 12px 0;
+}
+
+.admin-msg-item .msg-text {
+    background: #f5f7fb;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-top: 6px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
 
 
 
