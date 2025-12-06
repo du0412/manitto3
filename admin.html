@@ -131,7 +131,7 @@
     <!-- 메시지함 -->
     <div class="box">
         <h3>메시지함 (관리자용)</h3>
-        <div id="messageList">코드 선택 시 메시지 표시</div>
+        <div id="messageList">좌측에서 참여자를 선택하세요.</div>
     </div>
 
 </div>
@@ -202,8 +202,8 @@ async function loadParticipants() {
     snap.forEach(doc => {
         html += `
             <div class="user-item">
-                <span>${doc.id} - ${doc.data().name}</span>
-                <button style="font-size:12px;" onclick="loadMessages('${doc.id}')">메시지 보기</button>
+                <span>${doc.data().name} (${doc.id})</span>
+                <button style="font-size:12px;" onclick="loadMessages('${doc.data().name}')">메시지 보기</button>
             </div>`;
     });
 
@@ -245,20 +245,49 @@ async function loadMatched() {
     document.getElementById("matchedList").innerHTML = html || "없음";
 }
 
-/* 메시지함 조회 */
-async function loadMessages(code) {
-    const snap = await db.collection("messages").doc(code).collection("list").orderBy("time","asc").get();
+/* 메시지함 조회 — 실제 Firebase 구조에 맞게 완전히 다시 작성 */
+async function loadMessages(userName) {
+    document.getElementById("messageList").innerHTML =
+        `<h4 style="margin-bottom:10px;">${userName}님의 메시지</h4>불러오는 중...`;
 
-    let html = `<h4 style="margin-bottom:10px;">코드 ${code} 메시지</h4>`;
+    const ref = db.collection("messages");
 
-    if (snap.empty) {
-        html += `<div class="msg-box">메시지가 없습니다.</div>`;
+    // 받은 메시지
+    const received = await ref.where("to", "==", userName).orderBy("time","asc").get();
+
+    // 보낸 메시지
+    const sent = await ref.where("from", "==", userName).orderBy("time","asc").get();
+
+    let html = `<h3>${userName}님의 메시지함</h3>`;
+
+    // 받은 메시지
+    html += `<h4>📥 받은 메시지</h4>`;
+    if (received.empty) {
+        html += `<div class="msg-box">없음</div>`;
     } else {
-        snap.forEach(doc => {
+        received.forEach(doc => {
+            let msg = doc.data();
             html += `
                 <div class="msg-box">
-                    <div><b>보낸 사람:</b> ${doc.data().from}</div>
-                    <div style="margin-top:5px;">${doc.data().text}</div>
+                    <b>FROM:</b> ${msg.from}<br>
+                    <p>${msg.text}</p>
+                    <small>${new Date(msg.time).toLocaleString()}</small>
+                </div>`;
+        });
+    }
+
+    // 보낸 메시지
+    html += `<h4 style="margin-top:20px;">📤 보낸 메시지</h4>`;
+    if (sent.empty) {
+        html += `<div class="msg-box">없음</div>`;
+    } else {
+        sent.forEach(doc => {
+            let msg = doc.data();
+            html += `
+                <div class="msg-box">
+                    <b>TO:</b> ${msg.to}<br>
+                    <p>${msg.text}</p>
+                    <small>${new Date(msg.time).toLocaleString()}</small>
                 </div>`;
         });
     }
