@@ -1,93 +1,219 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>마니또 관리자</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        h1 { font-size: 24px; }
-        button { padding: 10px; margin-top: 10px; }
-        textarea { width: 100%; height: 200px; margin-top: 10px; }
-        .box { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
-    </style>
+<meta charset="UTF-8">
+<title>GGAC 마니또 관리자 페이지</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+<style>
+    body {
+        font-family: Pretendard, sans-serif;
+        background: #f5f6f8;
+        padding: 30px;
+    }
+
+    #wrap {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 24px;
+    }
+
+    textarea, input {
+        width: 100%;
+        padding: 12px;
+        font-size: 15px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        margin-top: 10px;
+        background: #fafafa;
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 100%;
+        padding: 14px;
+        margin-top: 12px;
+        border: none;
+        background: #4F7BFF;
+        color: white;
+        font-weight: bold;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        opacity: 0.9;
+    }
+
+    .box {
+        margin-top: 25px;
+        padding: 18px;
+        background: #f9fafc;
+        border-radius: 14px;
+        border: 1px solid #e6e8eb;
+    }
+
+    .user-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+</style>
 </head>
 <body>
 
-<h1>마니또 관리자 페이지</h1>
+<div id="wrap">
+    <h1>GGAC 마니또 관리자</h1>
 
-<button onclick="runMatching()">🔀 랜덤 매칭 실행</button>
-<button onclick="loadParticipants()">👥 참가자 조회</button>
-<button onclick="loadMessages()">💬 전체 메시지 조회</button>
+    <!-- 1. 참여자 등록 -->
+    <h3>참여자 대량 등록</h3>
+    <textarea id="names" placeholder="이름을 줄바꿈으로 여러 개 입력하세요&#10;예)&#10;김민수&#10;박서연&#10;이준호"></textarea>
+    <button onclick="registerParticipants()">참여자 등록</button>
 
-<div id="output" class="box"></div>
+    <!-- 2. 현재 참여자 조회 -->
+    <div class="box">
+        <h3>현재 참여자 목록</h3>
+        <div id="list">불러오는 중...</div>
+    </div>
 
-<!-- Firebase v8 버전 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <!-- 3. 매칭 실행 -->
+    <button onclick="runMatching()">랜덤 매칭 실행</button>
 
-<script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCo0eAyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
-      authDomain: "manitto3-e0164.firebaseapp.com",
-      databaseURL: "https://manitto3-e0164-default-rtdb.firebaseio.com",
-      projectId: "manitto3-e0164",
-      storageBucket: "manitto3-e0164.firebasestorage.app",
-      messagingSenderId: "97931219910",
-      appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
-    };
+    <!-- 4. 매칭 결과 -->
+    <div class="box">
+        <h3>매칭 결과</h3>
+        <div id="matchedList">없음</div>
+    </div>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    /* 랜덤 매칭 실행 */
-    async function runMatching() {
-        const snap = await db.collection("participants").get();
-        let arr = [];
+<script type="module">
+/* Firebase 초기화 */
+const firebaseConfig = {
+  apiKey: "AIzaSyCo0eEyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
+  authDomain: "manitto3-e0164.firebaseapp.com",
+  projectId: "manitto3-e0164",
+  storageBucket: "manitto3-e0164.firebasestorage.app",
+  messagingSenderId: "97931219910",
+  appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
+};
 
-        snap.forEach(doc => {
-            arr.push({ code: doc.id, ...doc.data() });
-        });
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-        let shuffled = [...arr].sort(() => Math.random() - 0.5);
 
-        for (let i = 0; i < arr.length; i++) {
-            const giver = arr[i];
-            const receiver = shuffled[(i + 1) % arr.length];
+/* -----------------------
+   1. 랜덤 4자리 코드 생성
+------------------------ */
+function makeCode() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+}
 
-            await db.collection("participants").doc(giver.code).update({
-                matched_to: receiver.name
-            });
+
+/* -----------------------
+   2. 참여자 자동 등록
+------------------------ */
+async function registerParticipants() {
+    let raw = document.getElementById("names").value.trim();
+    if (!raw) {
+        alert("이름을 입력하세요.");
+        return;
+    }
+
+    let names = raw.split("\n").map(n => n.trim()).filter(n => n);
+
+    for (let name of names) {
+        let code = makeCode();
+
+        // 혹시 겹치는 코드가 있으면 재생성
+        while ((await db.collection("participants").doc(code).get()).exists) {
+            code = makeCode();
         }
 
-        alert("랜덤 매칭 완료!");
-    }
-
-    /* 참가자 조회 */
-    async function loadParticipants() {
-        const snap = await db.collection("participants").get();
-        let html = "<h3>참가자 리스트</h3>";
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            html += `<div><b>${d.name}</b> (코드: ${doc.id}) → ${d.matched_to || "X"}</div>`;
+        await db.collection("participants").doc(code).set({
+            name: name,
+            matched_to: ""
         });
-
-        document.getElementById("output").innerHTML = html;
     }
 
-    /* 전체 메시지 조회 */
-    async function loadMessages() {
-        const snap = await db.collection("messages").orderBy("time").get();
-        let html = "<h3>전체 메시지</h3>";
+    alert("참여자 등록 완료!");
+    loadParticipants();
+}
 
-        snap.forEach(doc => {
-            const d = doc.data();
-            html += `<div> <b>${d.from}</b> → <b>${d.to}</b>: ${d.text}</div>`;
+
+/* -----------------------
+   3. 참여자 목록 불러오기
+------------------------ */
+async function loadParticipants() {
+    const snap = await db.collection("participants").get();
+    let html = "";
+
+    snap.forEach(doc => {
+        html += `<div class="user-item">${doc.id} - ${doc.data().name}</div>`;
+    });
+
+    document.getElementById("list").innerHTML = html;
+}
+loadParticipants();
+
+
+/* -----------------------
+   4. 랜덤 매칭 실행
+------------------------ */
+async function runMatching() {
+    const snap = await db.collection("participants").get();
+    let arr = [];
+
+    snap.forEach(doc => {
+        arr.push({ code: doc.id, ...doc.data() });
+    });
+
+    let shuffled = [...arr].sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < arr.length; i++) {
+        const giver = arr[i];
+        const receiver = shuffled[(i + 1) % arr.length];
+
+        await db.collection("participants").doc(giver.code).update({
+            matched_to: receiver.name
         });
-
-        document.getElementById("output").innerHTML = html;
     }
+
+    alert("매칭 완료!");
+    loadMatched();
+}
+
+
+/* -----------------------
+   5. 매칭 결과 불러오기
+------------------------ */
+async function loadMatched() {
+    const snap = await db.collection("participants").get();
+    let html = "";
+
+    snap.forEach(doc => {
+        html += `<div class="user-item">${doc.data().name} → ${doc.data().matched_to}</div>`;
+    });
+
+    document.getElementById("matchedList").innerHTML = html;
+}
 </script>
 
 </body>
