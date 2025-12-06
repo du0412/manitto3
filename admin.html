@@ -4,103 +4,141 @@
 <meta charset="UTF-8">
 <title>GGAC 마니또 관리자 페이지</title>
 
-<!-- 🔥 Firebase v8 SDK (안정 버전) -->
+<!-- Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <style>
     body {
         font-family: Pretendard, sans-serif;
-        background: #f5f6f8;
-        padding: 30px;
+        background: #eef1f6;
+        padding: 40px;
     }
 
     #wrap {
-        max-width: 600px;
+        max-width: 750px;
         margin: 0 auto;
-        padding: 30px;
+        padding: 35px;
         background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-radius: 18px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     }
 
     h1 {
         text-align: center;
+        font-size: 26px;
         margin-bottom: 25px;
-        font-size: 24px;
+    }
+
+    h3 {
+        margin-top: 30px;
+        font-size: 18px;
+        font-weight: 600;
     }
 
     textarea, input {
         width: 100%;
-        padding: 12px;
+        padding: 13px;
         font-size: 15px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        margin-top: 10px;
+        border-radius: 12px;
+        border: 1px solid #d6d9de;
         background: #fafafa;
+        margin-top: 10px;
         box-sizing: border-box;
     }
 
-    button {
+    .btn {
         width: 100%;
         padding: 14px;
-        margin-top: 12px;
-        border: none;
-        background: #4F7BFF;
+        margin-top: 14px;
+        background: #4F6BFF;
         color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
         font-weight: bold;
-        border-radius: 10px;
         cursor: pointer;
+        transition: 0.2s;
     }
 
-    button:hover {
-        opacity: 0.9;
+    .btn:hover {
+        background: #3d55d1;
+    }
+
+    .btn-red {
+        background: #ff4f4f;
+    }
+
+    .btn-red:hover {
+        background: #d93d3d;
     }
 
     .box {
         margin-top: 25px;
-        padding: 18px;
-        background: #f9fafc;
+        padding: 20px;
+        background: #f7f8fb;
         border-radius: 14px;
-        border: 1px solid #e6e8eb;
+        border: 1px solid #e2e4e8;
     }
 
     .user-item {
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
+        padding: 9px 0;
+        border-bottom: 1px solid #e6e6e6;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .msg-box {
+        margin-top: 10px;
+        padding: 12px;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #ddd;
         font-size: 14px;
     }
 </style>
+
 </head>
 <body>
 
 <div id="wrap">
     <h1>GGAC 마니또 관리자</h1>
 
-    <!-- 1. 참여자 등록 -->
+    <!-- 참여자 대량 등록 -->
     <h3>참여자 대량 등록</h3>
-    <textarea id="names" placeholder="이름을 줄바꿈으로 여러 개 입력하세요&#10;예)&#10;김민수&#10;박서연&#10;이준호"></textarea>
-    <button onclick="registerParticipants()">참여자 등록</button>
+    <textarea id="names" placeholder="이름을 줄바꿈으로 입력하세요"></textarea>
+    <button class="btn" onclick="registerParticipants()">참여자 등록</button>
 
-    <!-- 2. 현재 참여자 조회 -->
+    <!-- 참여자 전체 삭제 버튼 -->
+    <button class="btn btn-red" onclick="deleteAllParticipants()">⚠ 참여자 전체 삭제</button>
+
+    <!-- 현재 참여자 -->
     <div class="box">
         <h3>현재 참여자 목록</h3>
         <div id="list">불러오는 중...</div>
     </div>
 
-    <!-- 3. 매칭 실행 -->
-    <button onclick="runMatching()">랜덤 매칭 실행</button>
+    <!-- 랜덤 매칭 -->
+    <button class="btn" onclick="runMatching()">랜덤 매칭 실행</button>
 
-    <!-- 4. 매칭 결과 -->
+    <!-- 매칭 결과 -->
     <div class="box">
         <h3>매칭 결과</h3>
         <div id="matchedList">없음</div>
     </div>
+
+    <!-- 메시지함 -->
+    <div class="box">
+        <h3>메시지함 (관리자용)</h3>
+        <div id="messageList">코드 선택 시 메시지 표시</div>
+    </div>
+
 </div>
 
 
 <script>
-/* 🔥 Firebase 초기화 (v8) */
+/* Firebase 설정 */
 const firebaseConfig = {
   apiKey: "AIzaSyCo0eEyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
   authDomain: "manitto3-e0164.firebaseapp.com",
@@ -109,44 +147,29 @@ const firebaseConfig = {
   messagingSenderId: "97931219910",
   appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-
-/* -----------------------
-   1. 랜덤 4자리 코드 생성
------------------------- */
+/* 랜덤 코드 4자리 */
 function makeCode() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
-    for (let i = 0; i < 4; i++) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-    }
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
     return code;
 }
 
-
-/* -----------------------
-   2. 참여자 대량 자동 등록
------------------------- */
+/* 참여자 등록 */
 async function registerParticipants() {
     let raw = document.getElementById("names").value.trim();
-    if (!raw) {
-        alert("이름을 입력하세요.");
-        return;
-    }
+    if (!raw) return alert("이름을 입력하세요.");
 
     let names = raw.split("\n").map(n => n.trim()).filter(n => n);
 
     for (let name of names) {
         let code = makeCode();
-
-        // 겹치는 코드 있으면 재생성
         while ((await db.collection("participants").doc(code).get()).exists) {
             code = makeCode();
         }
-
         await db.collection("participants").doc(code).set({
             name,
             matched_to: ""
@@ -157,33 +180,43 @@ async function registerParticipants() {
     loadParticipants();
 }
 
+/* 참여자 전체 삭제 */
+async function deleteAllParticipants() {
+    if (!confirm("⚠ 모든 참가자를 삭제하시겠습니까?")) return;
 
-/* -----------------------
-   3. 참여자 목록 불러오기
------------------------- */
+    const snap = await db.collection("participants").get();
+    const batch = db.batch();
+
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    alert("전체 삭제 완료!");
+    loadParticipants();
+}
+
+/* 참여자 목록 불러오기 */
 async function loadParticipants() {
     const snap = await db.collection("participants").get();
     let html = "";
 
     snap.forEach(doc => {
-        html += `<div class="user-item">${doc.id} - ${doc.data().name}</div>`;
+        html += `
+            <div class="user-item">
+                <span>${doc.id} - ${doc.data().name}</span>
+                <button style="font-size:12px;" onclick="loadMessages('${doc.id}')">메시지 보기</button>
+            </div>`;
     });
 
-    document.getElementById("list").innerHTML = html;
+    document.getElementById("list").innerHTML = html || "없음";
 }
 loadParticipants();
 
-
-/* -----------------------
-   4. 랜덤 매칭 실행
------------------------- */
+/* 랜덤 매칭 */
 async function runMatching() {
     const snap = await db.collection("participants").get();
     let arr = [];
 
-    snap.forEach(doc => {
-        arr.push({ code: doc.id, ...doc.data() });
-    });
+    snap.forEach(doc => arr.push({ code: doc.id, ...doc.data() }));
 
     let shuffled = [...arr].sort(() => Math.random() - 0.5);
 
@@ -200,10 +233,7 @@ async function runMatching() {
     loadMatched();
 }
 
-
-/* -----------------------
-   5. 매칭 결과 불러오기
------------------------- */
+/* 매칭 결과 표시 */
 async function loadMatched() {
     const snap = await db.collection("participants").get();
     let html = "";
@@ -212,7 +242,28 @@ async function loadMatched() {
         html += `<div class="user-item">${doc.data().name} → ${doc.data().matched_to}</div>`;
     });
 
-    document.getElementById("matchedList").innerHTML = html;
+    document.getElementById("matchedList").innerHTML = html || "없음";
+}
+
+/* 메시지함 조회 */
+async function loadMessages(code) {
+    const snap = await db.collection("messages").doc(code).collection("list").orderBy("time","asc").get();
+
+    let html = `<h4 style="margin-bottom:10px;">코드 ${code} 메시지</h4>`;
+
+    if (snap.empty) {
+        html += `<div class="msg-box">메시지가 없습니다.</div>`;
+    } else {
+        snap.forEach(doc => {
+            html += `
+                <div class="msg-box">
+                    <div><b>보낸 사람:</b> ${doc.data().from}</div>
+                    <div style="margin-top:5px;">${doc.data().text}</div>
+                </div>`;
+        });
+    }
+
+    document.getElementById("messageList").innerHTML = html;
 }
 </script>
 
