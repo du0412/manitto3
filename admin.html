@@ -180,28 +180,49 @@ function makeCode() {
 }
 
 // 참여자 등록
+import { 
+    getFirestore, doc, setDoc, getDoc 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const db = getFirestore();
+
+// 참여자 등록
 async function registerParticipants() {
     const raw = document.getElementById("names").value.trim();
     if (!raw) return alert("이름을 입력하세요.");
 
-    const names = raw.split("\n").map(n => n.trim()).filter(n => n);
+    const names = raw
+        .split("\n")
+        .map(n => n.trim())
+        .filter(n => n.length > 0);
 
-    for (let name of names) {
+    // 개별 등록 함수
+    async function registerOne(name) {
         let code = makeCode();
-
-        while ((await db.collection("participants").doc(code).get()).exists) {
+        
+        // 충돌 검사
+        let ref = doc(db, "participants", code);
+        let snap = await getDoc(ref);
+        while (snap.exists()) {
             code = makeCode();
+            ref = doc(db, "participants", code);
+            snap = await getDoc(ref);
         }
 
-        await db.collection("participants").doc(code).set({
+        // 등록
+        await setDoc(ref, {
             name,
             matched_to: ""
         });
     }
 
+    // 병렬 처리 (누락 방지)
+    await Promise.all(names.map(name => registerOne(name)));
+
     alert("등록 완료!");
     loadParticipants();
 }
+
 
 // 전체 삭제
 async function deleteAllParticipants() {
@@ -328,3 +349,4 @@ async function loadMessages(code) {
 
 </body>
 </html>
+
