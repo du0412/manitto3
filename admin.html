@@ -1,376 +1,309 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<title>GGAC 마니또 관리자 페이지</title>
-
-<!-- Firebase v8 (안정된 방식) -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<meta charset="UTF-8">
+<title>관리자 페이지</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
 
 <style>
     body {
-        font-family: Pretendard, sans-serif;
-        background: #eef1f6;
-        padding: 36px;
+        font-family: 'Pretendard', sans-serif;
+        margin: 0; background: #f5f6fa;
     }
 
-    #wrap {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 28px;
-        background: white;
-        border-radius: 14px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    h2 { margin: 10px 0; }
+
+    .container {
+        max-width: 1200px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
 
-    h1 { text-align:center; font-size:26px; margin-bottom:18px; }
-    h3 { margin-top:20px; font-size:16px; font-weight:600; }
-
-    textarea, input {
-        width:100%;
-        padding:12px;
-        border-radius:10px;
-        border:1px solid #d6d9de;
-        background:#fafafa;
-        box-sizing:border-box;
-        font-size:14px;
+    textarea {
+        width: 100%;
+        height: 120px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        resize: none;
+        margin-bottom: 10px;
+        font-size: 14px;
     }
 
-    .btn {
-        width:100%;
-        padding:12px;
-        margin-top:12px;
-        background:#4F6BFF;
-        color:white;
-        border:none;
-        border-radius:10px;
-        font-weight:600;
-        cursor:pointer;
+    button {
+        padding: 10px 16px;
+        background: #4c75f2;
+        border: none;
+        color: #fff;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 3px 0;
+        font-size: 14px;
     }
-    .btn:hover { opacity:0.95; }
+    button:hover { background: #3d63cc; }
 
-    .btn-red { background:#FF4F4F; }
-    .row { display:flex; gap:16px; }
-    .col { flex:1; }
-
-    .box {
-        margin-top:18px;
-        padding:16px;
-        background:#f7f8fb;
-        border-radius:12px;
-        border:1px solid #e7e9ee;
+    .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
     }
 
-    .user-item {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding:8px 6px;
-        border-bottom:1px solid #eee;
-        font-size:14px;
-    }
-    .user-item:last-child { border-bottom: none; }
-
-    .user-item button {
-        padding:6px 10px;
-        border-radius:8px;
-        border:none;
-        background:#4F6BFF;
-        color:white;
-        cursor:pointer;
-        font-size:13px;
+    .list {
+        background: #f1f2f6;
+        padding: 10px;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 14px;
     }
 
-    /* 메시지 카드 */
-    .msg-card {
-        background:#fff;
-        border-radius:12px;
-        padding:12px;
-        border:1px solid #e6e9ee;
-        box-shadow: 0 2px 8px rgba(16,24,40,0.03);
-        margin-bottom:10px;
+    .participant-item {
+        padding: 8px;
+        background: #fff;
+        margin-bottom: 6px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1px solid #ddd;
     }
-    .msg-meta { font-size:13px; color:#6b7280; margin-bottom:6px; }
-    .msg-text { font-size:14px; white-space:pre-line; color:#111827; }
+    .participant-item:hover {
+        background: #eef3ff;
+    }
 
-    .small { font-size:12px; color:#808089; }
+    .msg-box {
+        background: #fff;
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        margin-bottom: 8px;
+    }
+
 </style>
 </head>
 <body>
 
-<div id="wrap">
-    <h1>GGAC 마니또 관리자</h1>
+<div class="container">
 
-    <div class="box">
-        <h3>참여자 대량 등록</h3>
-        <textarea id="names" placeholder="이름을 줄바꿈으로 입력하세요. 예)&#10;김민수&#10;박서연"></textarea>
-        <button class="btn" onclick="registerParticipants()">참여자 등록</button>
+    <h2>참가자 등록</h2>
+    <textarea id="names" placeholder="한 줄에 한 명씩 입력하세요"></textarea>
+    <button onclick="registerParticipants()">참가자 등록</button>
+    <button onclick="deleteAllParticipants()" style="background:#d9534f">전체 삭제</button>
 
-        <button class="btn btn-red" style="margin-top:10px;" onclick="deleteAllParticipants()">⚠ 참여자 전체 삭제</button>
-    </div>
+    <hr>
 
-    <div class="row" style="margin-top:18px;">
-        <div class="col">
-            <div class="box">
-                <h3>현재 참여자 목록</h3>
-                <div id="list">불러오는 중...</div>
-            </div>
+    <h2>랜덤 매칭</h2>
+    <button onclick="doMatching()">랜덤 매칭 실행</button>
 
-            <button class="btn" style="margin-top:12px;" onclick="runMatching()">랜덤 매칭 실행</button>
+    <hr>
 
-            <div class="box" style="margin-top:12px;">
-                <h3>매칭 결과</h3>
-                <div id="matchedList">없음</div>
-            </div>
-        </div>
+    <h2>참가자 목록</h2>
+    <div class="list" id="participantsList">불러오는 중...</div>
 
-        <div class="col">
-            <div class="box">
-                <h3>메시지함 (관리자용)</h3>
-                <div id="messageList" class="small">좌측에서 참여자를 선택하세요.</div>
-            </div>
-        </div>
-    </div>
+    <hr>
+
+    <h2>메시지함 (특정 참가자 선택)</h2>
+    <div class="list" id="messagesList">참가자를 선택하세요.</div>
+
+    <hr>
+
+    <h2>전체 메시지 조회</h2>
+    <button onclick="loadAllMessages()">전체 메시지 불러오기</button>
+    <div class="list" id="allMessages">전체 메시지를 불러오세요.</div>
+
 </div>
 
+
 <script>
-/* ----------------------
-   Firebase(v8) 설정
-   ---------------------- */
+/* ---------- Firebase 초기화 ---------- */
 const firebaseConfig = {
-    apiKey: "AIzaSyCo0eEyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
+    apiKey: "YOUR_API_KEY",
     authDomain: "manitto3-e0164.firebaseapp.com",
     projectId: "manitto3-e0164",
-    storageBucket: "manitto3-e0164.firebasestorage.app",
-    messagingSenderId: "97931219910",
-    appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
+    storageBucket: "manitto3-e0164.appspot.com",
+    messagingSenderId: "176237527550",
+    appId: "1:176237527550:web:xxxxxxxxxx"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ----------------------
-   유틸: 랜덤 코드(4자리 영숫자)
-   ---------------------- */
-function makeCode() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+/* --------------------------------------------- */
+/*  1. 4자리 숫자 코드 생성 (1000~9999)          */
+/* --------------------------------------------- */
+function generateCode() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-/* ======================
-   참여자 등록 (누락방지)
-   ====================== */
+/* -------------------------------------------------------- */
+/*   2. 참가자 등록 (누락 방지: await 보장)                 */
+/* -------------------------------------------------------- */
 async function registerParticipants() {
-    const raw = document.getElementById("names").value || "";
-    const names = raw.split("\n").map(s => s.trim()).filter(s => s.length > 0);
-    if (!names.length) { alert("이름을 입력하세요."); return; }
+    const raw = document.getElementById("names").value.trim();
+    if (!raw) return alert("이름을 입력하세요!");
 
-    // 개별 등록 함수 (v8 방식으로 Promise 반환)
-    function registerOne(name) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                let code = makeCode();
-                // 충돌 검사 (반복: exists)
-                let snap = await db.collection("participants").doc(code).get();
-                while (snap.exists) {
-                    code = makeCode();
-                    snap = await db.collection("participants").doc(code).get();
-                }
-                // 등록
-                await db.collection("participants").doc(code).set({
-                    name: name,
-                    matched_to: ""
-                });
-                resolve({ code, name });
-            } catch (e) {
-                reject(e);
-            }
+    const names = raw.split("\n").map(n => n.trim()).filter(n => n);
+
+    for (let name of names) {
+        let code = generateCode();
+        while ((await db.collection("participants").doc(code).get()).exists) {
+            code = generateCode();
+        }
+
+        await db.collection("participants").doc(code).set({
+            name: name,
+            matched_to: ""
         });
     }
 
-    // 병렬 실행 + 실패시 전체 중단 (필요하면 개별 실패도 허용하도록 변경 가능)
-    try {
-        const results = await Promise.all(names.map(n => registerOne(n)));
-        console.log("registered:", results);
-        alert(`등록 완료! (${results.length}명)`);
-        document.getElementById("names").value = "";
-        loadParticipants();
-    } catch (err) {
-        console.error("register error:", err);
-        alert("참여자 등록 중 오류가 발생했습니다. 콘솔을 확인하세요.");
-    }
+    alert("등록 완료!");
+    loadParticipants();
 }
 
-/* 전체 삭제 (주의: 소수 인원용) */
-async function deleteAllParticipants() {
-    if (!confirm("정말 모든 참가자를 삭제하시겠습니까?")) return;
-    try {
-        const snap = await db.collection("participants").get();
-        const batch = db.batch();
-        snap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        alert("참여자 전체 삭제 완료");
-        loadParticipants();
-        document.getElementById("messageList").innerHTML = "좌측에서 참여자를 선택하세요.";
-    } catch (e) {
-        console.error(e);
-        alert("삭제 중 오류 발생");
-    }
-}
-
-/* 참여자 목록 불러오기 */
+/* -------------------------------------------------------- */
+/*  3. 전체 참가자 불러오기                                 */
+/* -------------------------------------------------------- */
 async function loadParticipants() {
-    try {
-        const snap = await db.collection("participants").orderBy("name","asc").get();
-        if (!snap.empty) {
-            let html = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                html += `
-                    <div class="user-item">
-                        <div><strong>${d.name}</strong> <span class="small">(${doc.id})</span></div>
-                        <div><button onclick="loadMessages('${doc.id}')">메시지 보기</button></div>
-                    </div>`;
-            });
-            document.getElementById("list").innerHTML = html;
-        } else {
-            document.getElementById("list").innerHTML = "<div class='small'>참여자가 없습니다.</div>";
-        }
-    } catch (e) {
-        console.error("loadParticipants error:", e);
-        document.getElementById("list").innerHTML = "<div class='small'>불러오기 오류 (콘솔 확인)</div>";
-    }
-}
-loadParticipants();
+    const box = document.getElementById("participantsList");
+    box.innerHTML = "불러오는 중...";
 
-/* 랜덤 매칭 실행 */
-async function runMatching() {
-    try {
-        const snap = await db.collection("participants").get();
-        const arr = [];
-        snap.forEach(doc => arr.push({ code: doc.id, ...doc.data() }));
+    const snap = await db.collection("participants").get();
 
-        if (arr.length < 2) { alert("참여자가 2명 이상 있어야 매칭 가능합니다."); return; }
-
-        // 셔플
-        const shuffled = [...arr].sort(() => Math.random() - 0.5);
-
-        // update (순차적으로 업데이트)
-        const batch = db.batch();
-        for (let i = 0; i < arr.length; i++) {
-            const giver = arr[i];
-            const receiver = shuffled[(i + 1) % arr.length];
-            const ref = db.collection("participants").doc(giver.code);
-            batch.update(ref, { matched_to: receiver.name });
-        }
-        await batch.commit();
-
-        alert("랜덤 매칭 완료!");
-        loadMatched();
-    } catch (e) {
-        console.error("matching error:", e);
-        alert("매칭 중 오류 발생");
-    }
-}
-
-/* 매칭 결과 불러오기 */
-async function loadMatched() {
-    try {
-        const snap = await db.collection("participants").orderBy("name","asc").get();
-        if (!snap.empty) {
-            let html = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                html += `<div class="user-item">${d.name} → ${d.matched_to || "<span class='small'>미매칭</span>"}</div>`;
-            });
-            document.getElementById("matchedList").innerHTML = html;
-        } else {
-            document.getElementById("matchedList").innerHTML = "없음";
-        }
-    } catch (e) {
-        console.error("loadMatched err:", e);
-        document.getElementById("matchedList").innerHTML = "오류";
-    }
-}
-
-/* ===========================
-   메시지함: code(문서ID) 기준 조회
-   =========================== */
-async function loadMessages(code) {
-    // 초기 UI
-    document.getElementById("messageList").innerHTML = `
-        <div style="margin-bottom:10px;"><strong>선택된 코드:</strong> ${code}</div>
-        <div style="display:flex; gap:12px;">
-            <div style="flex:1;">
-                <h4 style="margin:0 0 8px 0;">📥 받은 메시지</h4>
-                <div id="inbox">불러오는 중...</div>
-            </div>
-            <div style="flex:1;">
-                <h4 style="margin:0 0 8px 0;">📤 보낸 메시지</h4>
-                <div id="outbox">불러오는 중...</div>
-            </div>
-        </div>
-    `;
-
-    const msgsRef = db.collection("messages");
-
-    function renderCard(header, d) {
-        const timeStr = d.time ? (new Date(Number(d.time)).toLocaleString()) : "";
-        return `
-            <div class="msg-card">
-                <div class="msg-meta">${header} · <span class="small">${timeStr}</span></div>
-                <div class="msg-text">${(d.text||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+    let html = "";
+    snap.forEach(doc => {
+        const p = doc.data();
+        html += `
+            <div class="participant-item" onclick="loadMessages('${doc.id}', '${p.name}')">
+                <b>${p.name}</b> (${doc.id})
+                <br>→ ${p.matched_to || "없음"}
             </div>
         `;
+    });
+
+    box.innerHTML = html || "참가자가 없습니다.";
+}
+
+/* -------------------------------------------------------- */
+/*  4. 랜덤 매칭 (DB에 영구 저장 → 새로고침해도 유지)        */
+/* -------------------------------------------------------- */
+async function doMatching() {
+    const snap = await db.collection("participants").get();
+    let list = snap.docs.map(doc => ({ code: doc.id, ...doc.data() }));
+
+    if (list.length < 2) return alert("2명 이상 필요합니다!");
+
+    // 셔플
+    for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
     }
 
-    // 받은 메시지 (orderBy 시도 후 실패시 fallback)
-    try {
-        const recvSnap = await msgsRef.where("to", "==", code).orderBy("time","asc").get();
-        let recvHTML = "";
-        recvSnap.forEach(doc => recvHTML += renderCard("From: " + (doc.data().from || ""), doc.data()));
-        document.getElementById("inbox").innerHTML = recvHTML || "<div class='small'>받은 메시지가 없습니다.</div>";
-    } catch (err) {
-        console.warn("recv orderBy err (try fallback):", err);
-        try {
-            const recvSnap2 = await msgsRef.where("to","==",code).get();
-            let recvHTML = "";
-            recvSnap2.forEach(doc => recvHTML += renderCard("From: " + (doc.data().from||""), doc.data()));
-            document.getElementById("inbox").innerHTML = recvHTML || "<div class='small'>받은 메시지가 없습니다.</div>";
-        } catch (e2) {
-            console.error("recv fallback err:", e2);
-            document.getElementById("inbox").innerHTML = `<div class='small'>불러오기 오류</div>`;
-        }
+    // 순환 매칭
+    for (let i = 0; i < list.length; i++) {
+        const giver = list[i].code;
+        const receiver = list[(i + 1) % list.length].code;
+        await db.collection("participants").doc(giver).update({ matched_to: receiver });
     }
 
-    // 보낸 메시지
-    try {
-        const sendSnap = await msgsRef.where("from","==",code).orderBy("time","asc").get();
-        let sendHTML = "";
-        sendSnap.forEach(doc => sendHTML += renderCard("To: " + (doc.data().to || ""), doc.data()));
-        document.getElementById("outbox").innerHTML = sendHTML || "<div class='small'>보낸 메시지가 없습니다.</div>";
-    } catch (err) {
-        console.warn("send orderBy err (try fallback):", err);
-        try {
-            const sendSnap2 = await msgsRef.where("from","==",code).get();
-            let sendHTML = "";
-            sendSnap2.forEach(doc => sendHTML += renderCard("To: " + (doc.data().to||""), doc.data()));
-            document.getElementById("outbox").innerHTML = sendHTML || "<div class='small'>보낸 메시지가 없습니다.</div>";
-        } catch (e2) {
-            console.error("send fallback err:", e2);
-            document.getElementById("outbox").innerHTML = `<div class='small'>불러오기 오류</div>`;
-        }
+    alert("매칭 완료!");
+    loadParticipants();
+}
+
+/* -------------------------------------------------------- */
+/*  5. 특정 참가자 메시지 불러오기                           */
+/* -------------------------------------------------------- */
+async function loadMessages(code, name) {
+    const box = document.getElementById("messagesList");
+    box.innerHTML = `${name}님의 메시지를 불러오는 중...`;
+
+    const snap = await db
+        .collection("participants")
+        .doc(code)
+        .collection("messages")
+        .orderBy("time", "asc")
+        .get();
+
+    if (snap.empty) {
+        box.innerHTML = "메시지가 없습니다.";
+        return;
     }
 
-    // 진단 로그 (개발 편의)
-    try {
-        const sample = await msgsRef.limit(5).get();
-        console.log("messages sample:", sample.docs.map(d=>d.data()));
-    } catch(e) { console.warn("sample read err", e); }
+    let html = "";
+    snap.forEach(doc => {
+        const m = doc.data();
+        html += `
+            <div class="msg-box">
+                <b>${m.from}</b> → <b>${m.to}</b><br>
+                ${m.text}<br>
+                <small>${m.time}</small>
+            </div>
+        `;
+    });
+
+    box.innerHTML = html;
+}
+
+/* -------------------------------------------------------- */
+/*  6. 전체 메시지 불러오기                                  */
+/* -------------------------------------------------------- */
+async function loadAllMessages() {
+    const box = document.getElementById("allMessages");
+    box.innerHTML = "불러오는 중...";
+
+    const participants = await db.collection("participants").get();
+    let all = [];
+
+    for (let doc of participants.docs) {
+        const code = doc.id;
+
+        const msgs = await db
+            .collection("participants")
+            .doc(code)
+            .collection("messages")
+            .orderBy("time", "asc")
+            .get();
+
+        msgs.forEach(m => {
+            all.push(m.data());
+        });
+    }
+
+    if (all.length === 0) {
+        box.innerHTML = "메시지가 없습니다.";
+        return;
+    }
+
+    all.sort((a, b) => a.time - b.time);
+
+    let html = "";
+    all.forEach(m => {
+        html += `
+            <div class="msg-box">
+                <b>${m.from}</b> → <b>${m.to}</b><br>
+                ${m.text}<br>
+                <small>${m.time}</small>
+            </div>
+        `;
+    });
+
+    box.innerHTML = html;
+}
+
+/* -------------------------------------------------------- */
+/*  7. 전체 삭제                                              */
+/* -------------------------------------------------------- */
+async function deleteAllParticipants() {
+    if (!confirm("정말 삭제할까요?")) return;
+
+    const snap = await db.collection("participants").get();
+    for (let doc of snap.docs) {
+        await db.collection("participants").doc(doc.id).delete();
+    }
+
+    document.getElementById("participantsList").innerHTML = "삭제됨";
 }
 </script>
-
 </body>
 </html>
