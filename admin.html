@@ -152,12 +152,13 @@ const db = firebase.firestore();
 /* ----------------------
    유틸: 랜덤 코드(4자리 영숫자)
    ---------------------- */
+/* ----------------------
+   유틸: 랜덤 코드 (1000~9999의 4자리 숫자)
+   ---------------------- */
 function makeCode() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+    return String(Math.floor(Math.random() * 9000) + 1000);  
 }
+
 
 /* ======================
    참여자 등록 (누락방지)
@@ -374,3 +375,4 @@ async function loadMessages(code) {
 
 </body>
 </html>
+
