@@ -78,6 +78,7 @@ button:active {
 
 /* 모바일 경고 */
 #mobile-warning {
+    display: none;   /* 기본은 숨김! */
     padding: 18px;
     text-align: center;
     background: #ffe9e9;
@@ -85,5 +86,7 @@ button:active {
     border-radius: 12px;
     margin-bottom: 20px;
 }
+
+
 
 
