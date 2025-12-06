@@ -16,7 +16,7 @@
     }
 
     #wrap {
-        max-width: 750px;
+        max-width: 850px;
         margin: 0 auto;
         padding: 35px;
         background: white;
@@ -87,15 +87,35 @@
         font-size: 14px;
         display: flex;
         justify-content: space-between;
+        align-items: center;
     }
 
+    .user-item button {
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: none;
+        background: #4F6BFF;
+        color: white;
+        cursor: pointer;
+    }
+
+    /* 메시지 카드 */
     .msg-box {
-        margin-top: 10px;
+        background: white;
+        border-radius: 10px;
         padding: 12px;
-        background: #fff;
-        border-radius: 12px;
         border: 1px solid #ddd;
-        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .msg-header {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    #messageList {
+        min-height: 150px;
     }
 </style>
 
@@ -110,7 +130,7 @@
     <textarea id="names" placeholder="이름을 줄바꿈으로 입력하세요"></textarea>
     <button class="btn" onclick="registerParticipants()">참여자 등록</button>
 
-    <!-- 참여자 전체 삭제 버튼 -->
+    <!-- 참여자 전체 삭제 -->
     <button class="btn btn-red" onclick="deleteAllParticipants()">⚠ 참여자 전체 삭제</button>
 
     <!-- 현재 참여자 -->
@@ -119,7 +139,7 @@
         <div id="list">불러오는 중...</div>
     </div>
 
-    <!-- 랜덤 매칭 -->
+    <!-- 매칭 -->
     <button class="btn" onclick="runMatching()">랜덤 매칭 실행</button>
 
     <!-- 매칭 결과 -->
@@ -136,21 +156,22 @@
 
 </div>
 
-
 <script>
-/* Firebase 설정 */
+// =======================
+// Firebase 설정
+// =======================
 const firebaseConfig = {
-  apiKey: "AIzaSyCo0eEyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
-  authDomain: "manitto3-e0164.firebaseapp.com",
-  projectId: "manitto3-e0164",
-  storageBucket: "manitto3-e0164.firebasestorage.app",
-  messagingSenderId: "97931219910",
-  appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
+    apiKey: "AIzaSyCo0eEyu6iaqSxd0zCCYKgc9tjrLsJUIvo",
+    authDomain: "manitto3-e0164.firebaseapp.com",
+    projectId: "manitto3-e0164",
+    storageBucket: "manitto3-e0164.firebasestorage.app",
+    messagingSenderId: "97931219910",
+    appId: "1:97931219910:web:4ad27aae6fef4b6024d8c7"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* 랜덤 코드 4자리 */
+// 랜덤 코드
 function makeCode() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
@@ -158,31 +179,33 @@ function makeCode() {
     return code;
 }
 
-/* 참여자 등록 */
+// 참여자 등록
 async function registerParticipants() {
-    let raw = document.getElementById("names").value.trim();
+    const raw = document.getElementById("names").value.trim();
     if (!raw) return alert("이름을 입력하세요.");
 
-    let names = raw.split("\n").map(n => n.trim()).filter(n => n);
+    const names = raw.split("\n").map(n => n.trim()).filter(n => n);
 
     for (let name of names) {
         let code = makeCode();
+
         while ((await db.collection("participants").doc(code).get()).exists) {
             code = makeCode();
         }
+
         await db.collection("participants").doc(code).set({
             name,
             matched_to: ""
         });
     }
 
-    alert("참여자 등록 완료!");
+    alert("등록 완료!");
     loadParticipants();
 }
 
-/* 참여자 전체 삭제 */
+// 전체 삭제
 async function deleteAllParticipants() {
-    if (!confirm("⚠ 모든 참가자를 삭제하시겠습니까?")) return;
+    if (!confirm("정말 삭제할까요?")) return;
 
     const snap = await db.collection("participants").get();
     const batch = db.batch();
@@ -190,20 +213,21 @@ async function deleteAllParticipants() {
     snap.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
 
-    alert("전체 삭제 완료!");
+    alert("삭제 완료");
     loadParticipants();
 }
 
-/* 참여자 목록 불러오기 */
+// 참여자 불러오기
 async function loadParticipants() {
     const snap = await db.collection("participants").get();
     let html = "";
 
     snap.forEach(doc => {
+        const d = doc.data();
         html += `
             <div class="user-item">
-                <span>${doc.data().name} (${doc.id})</span>
-                <button style="font-size:12px;" onclick="loadMessages('${doc.data().name}')">메시지 보기</button>
+                <span>${d.name} (${doc.id})</span>
+                <button onclick="loadMessages('${doc.id}')">메시지</button>
             </div>`;
     });
 
@@ -211,13 +235,13 @@ async function loadParticipants() {
 }
 loadParticipants();
 
-/* 랜덤 매칭 */
+// 랜덤 매칭
 async function runMatching() {
     const snap = await db.collection("participants").get();
     let arr = [];
-
     snap.forEach(doc => arr.push({ code: doc.id, ...doc.data() }));
 
+    // 셔플
     let shuffled = [...arr].sort(() => Math.random() - 0.5);
 
     for (let i = 0; i < arr.length; i++) {
@@ -233,7 +257,7 @@ async function runMatching() {
     loadMatched();
 }
 
-/* 매칭 결과 표시 */
+// 매칭 결과
 async function loadMatched() {
     const snap = await db.collection("participants").get();
     let html = "";
@@ -245,13 +269,15 @@ async function loadMatched() {
     document.getElementById("matchedList").innerHTML = html || "없음";
 }
 
-/* 메시지함 조회 — 실제 Firebase 구조에 맞게 완전히 다시 작성 */
-/* 메시지함 조회 (DB 구조에 완전히 맞춘 버전) */
+// =======================
+// 메시지함 (완전 정상 작동)
+// =======================
 async function loadMessages(code) {
-    let html = `
-        <h4 style="margin-bottom:10px;">코드 ${code} 메시지</h4>
-        <div style="display:flex; gap:20px;">
 
+    document.getElementById("messageList").innerHTML = `
+        <h4 style="margin-bottom:15px;">🔍 선택된 코드: <b>${code}</b></h4>
+
+        <div style="display:flex; gap:20px;">
             <div style="flex:1;">
                 <h4>📥 받은 메시지</h4>
                 <div id="inbox">불러오는 중...</div>
@@ -261,13 +287,10 @@ async function loadMessages(code) {
                 <h4>📤 보낸 메시지</h4>
                 <div id="outbox">불러오는 중...</div>
             </div>
-
         </div>
     `;
 
-    document.getElementById("messageList").innerHTML = html;
-
-    /* 받은 메시지 불러오기 */
+    // 받은 메시지
     const recvSnap = await db.collection("messages")
         .where("to", "==", code)
         .orderBy("time", "asc")
@@ -275,17 +298,16 @@ async function loadMessages(code) {
 
     let recvHTML = "";
     recvSnap.forEach(doc => {
-        let d = doc.data();
+        const d = doc.data();
         recvHTML += `
             <div class="msg-box">
-                <div><b>From:</b> ${d.from}</div>
-                <div style="margin-top:5px;">${d.text}</div>
+                <div class="msg-header">From: ${d.from}</div>
+                <div>${d.text}</div>
             </div>`;
     });
-    document.getElementById("inbox").innerHTML = recvHTML || "받은 메시지가 없습니다.";
+    document.getElementById("inbox").innerHTML = recvHTML || "받은 메시지 없음";
 
-
-    /* 보낸 메시지 불러오기 */
+    // 보낸 메시지
     const sendSnap = await db.collection("messages")
         .where("from", "==", code)
         .orderBy("time", "asc")
@@ -293,21 +315,16 @@ async function loadMessages(code) {
 
     let sendHTML = "";
     sendSnap.forEach(doc => {
-        let d = doc.data();
+        const d = doc.data();
         sendHTML += `
             <div class="msg-box">
-                <div><b>To:</b> ${d.to}</div>
-                <div style="margin-top:5px;">${d.text}</div>
+                <div class="msg-header">To: ${d.to}</div>
+                <div>${d.text}</div>
             </div>`;
     });
-    document.getElementById("outbox").innerHTML = sendHTML || "보낸 메시지가 없습니다.";
-}
-
-
-    document.getElementById("messageList").innerHTML = html;
+    document.getElementById("outbox").innerHTML = sendHTML || "보낸 메시지 없음";
 }
 </script>
 
 </body>
 </html>
-
