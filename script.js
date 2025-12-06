@@ -60,8 +60,21 @@ async function login() {
 -------------------------- */
 function showMatch() {
     const box = document.getElementById("match-section");
+
+    // 현재 열려 있으면 닫기
+    if (box.style.display === "block") {
+        box.style.display = "none";
+        return;
+    }
+
+    // 다른 박스들 닫기
+    document.getElementById("messages-section").style.display = "none";
+    document.getElementById("send-section").style.display = "none";
+
+    // 이 박스 열기
     box.style.display = "block";
 
+    // 내용 채우기
     if (!myTarget) {
         box.innerHTML = "<b>아직 매칭되지 않았습니다.</b>";
         return;
@@ -70,13 +83,25 @@ function showMatch() {
     box.innerHTML = `<b>당신의 마니또는: ${myTarget}</b>`;
 }
 
+
 /* -------------------------
    5. 메시지함 보기
 -------------------------- */
 async function showMessages() {
     const box = document.getElementById("messages-section");
+
+    // 이미 열려 있다면 닫기
+    if (box.style.display === "block") {
+        box.style.display = "none";
+        return;
+    }
+
+    // 다른 박스 닫기
+    document.getElementById("match-section").style.display = "none";
+    document.getElementById("send-section").style.display = "none";
+
+    // 열기
     box.style.display = "block";
-    
     box.innerHTML = "<b>메시지 불러오는 중...</b>";
 
     const q1 = db.collection("messages").where("to", "==", myName);
@@ -97,6 +122,7 @@ async function showMessages() {
 
     box.innerHTML = html;
 }
+
 
 /* -------------------------
    6. 메시지 보내기
@@ -151,8 +177,21 @@ async function runMatching() {
    6-1. 메시지 보내기 화면 열기
 -------------------------- */
 function showSend() {
-    document.getElementById("send-section").style.display = "block";
-    document.getElementById("messages-section").style.display = "none";
+    const box = document.getElementById("send-section");
+
+    // 열려 있다면 닫기
+    if (box.style.display === "block") {
+        box.style.display = "none";
+        return;
+    }
+
+    // 다른 박스 닫기
     document.getElementById("match-section").style.display = "none";
+    document.getElementById("messages-section").style.display = "none";
+
+    // 열기
+    box.style.display = "block";
 }
+
+
 
