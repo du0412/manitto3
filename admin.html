@@ -247,25 +247,38 @@ async function loadParticipants() {
 loadParticipants();
 
 /* 랜덤 매칭 실행 */
+/* 랜덤 매칭 실행 */
 async function runMatching() {
     try {
         const snap = await db.collection("participants").get();
         const arr = [];
-        snap.forEach(doc => arr.push({ code: doc.id, ...doc.data() }));
+        snap.forEach(doc => arr.push({ code: doc.id, name: doc.data().name }));
 
-        if (arr.length < 2) { alert("참여자가 2명 이상 있어야 매칭 가능합니다."); return; }
+        if (arr.length < 2) {
+            alert("참여자가 2명 이상 있어야 매칭 가능합니다.");
+            return;
+        }
 
-        // 셔플
-        const shuffled = [...arr].sort(() => Math.random() - 0.5);
+        // 1. Fisher-Yates shuffle (안정적 셔플)
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
 
-        // update (순차적으로 업데이트)
+        // 2. 순환 매칭 (절대 자기 자신 배정 X)
+        // arr[i] -> arr[i+1], 마지막 -> arr[0]
         const batch = db.batch();
         for (let i = 0; i < arr.length; i++) {
             const giver = arr[i];
-            const receiver = shuffled[(i + 1) % arr.length];
+            const receiver = arr[(i + 1) % arr.length];
+
             const ref = db.collection("participants").doc(giver.code);
-            batch.update(ref, { matched_to: receiver.name });
+            batch.update(ref, {
+                matched_to: receiver.name,
+                matched_code: receiver.code // 필요하면 추가 (추천)
+            });
         }
+
         await batch.commit();
 
         alert("랜덤 매칭 완료!");
@@ -275,6 +288,7 @@ async function runMatching() {
         alert("매칭 중 오류 발생");
     }
 }
+
 
 
 /* 매칭 결과 불러오기 */
@@ -376,5 +390,6 @@ async function loadMessages(code) {
 
 </body>
 </html>
+
 
 
