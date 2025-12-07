@@ -174,27 +174,42 @@ async function sendMessage() {
    7. 운영자 랜덤 매칭 함수
 -------------------------- */
 
-async function runMatching() {
+async function makeRandomMatch() {
     const snap = await db.collection("participants").get();
-    let arr = [];
+    const arr = [];
 
     snap.forEach(doc => {
-        arr.push({ code: doc.id, ...doc.data() });
+        arr.push({
+            code: doc.id,
+            name: doc.data().name
+        });
     });
 
-    let shuffled = [...arr].sort(() => Math.random() - 0.5);
+    if (arr.length < 2) {
+        alert("참가자가 너무 적습니다.");
+        return;
+    }
 
+    // 1. 배열 섞기 (Fisher–Yates shuffle)
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+
+    // 2. 순환 매칭: i → i+1, 마지막 → 첫 번째
     for (let i = 0; i < arr.length; i++) {
         const giver = arr[i];
-        const receiver = shuffled[(i + 1) % arr.length];
+        const receiver = arr[(i + 1) % arr.length];
 
         await db.collection("participants").doc(giver.code).update({
-            matched_to: receiver.name
+            matched_to: receiver.name,
+            matched_code: receiver.code
         });
     }
 
     alert("랜덤 매칭 완료!");
 }
+
 /* -------------------------
    6-1. 메시지 보내기 화면 열기
 -------------------------- */
@@ -214,6 +229,7 @@ function showSend() {
     // 열기
     box.style.display = "block";
 }
+
 
 
 
